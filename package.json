@@ -1,0 +1,21 @@
+{
+  "name": "d3training",
+  "version": "1.0.0",
+  "description": "Training with d3 library",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "browserify main.js -o browserify-bundle.js -d -v",
+    "watch": "watchify main.js -o browserify-bundle.js -d -v"
+  },
+  "author": "KrysD",
+  "license": "ISC",
+  "dependencies": {
+    "browserify": "^13.0.0",
+    "d3": "^3.5.14",
+    "csv-parse": "^1.0.1"
+  },
+  "devDependencies": {
+    "watchify": "^3.7.0"
+  }
+}
