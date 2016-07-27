@@ -8,11 +8,11 @@ var parser = parse({delimiter: ';', columns: true}); //
 
 var input = fs.createReadStream('./data/iris.csv'); //open stream to file 
 
-var geoData = [];
+var iris = [];
 
 input.pipe(parser)
 .on('data', function(data){
-	geoData.push(data);
+	iris.push(data);
 })
 .on('end', function(){
 	console.log('end');
