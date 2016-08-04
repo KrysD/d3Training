@@ -1,14 +1,20 @@
+.charts {
+  padding: 10px 0;
+}
+.chart {
+  padding-left: 20px;
+  padding-top: 10px;
+}
+
 .chart rect {
   fill: steelblue;
 }
 
-/*.chart text {
-  fill: white;
-  font: 10px sans-serif;
-  text-anchor: end;
-}*/
-
 .axis text {
+  font: 10px sans-serif;
+  fill: black;
+}
+.chart text {
   font: 10px sans-serif;
   fill: black;
 }
@@ -20,10 +26,29 @@
   shape-rendering: crispEdges;
 }
 
-.charts {
-  padding: 10px 0;
+/*dont display yAxis for categorical variable*/
+#chart .y.axis g {
+  display: none;
 }
 
-.x.axis path {
-  display: none;
+/*Labels in categorical chart */
+text#catTitle.catTitle {
+  font: 10px sans-serif;
+  fill: white;
+} 
+
+/*Color for the brush */
+.brush rect.extent {
+  fill: steelblue;
+  fill-opacity: .125;
+}
+/*Color for the brush resize path*/
+.brush .resize path {
+  fill: #eee;
+  stroke: #666;
+}
+
+/*Color for the hidden object*/
+.bar.hidden {
+  fill: grey;
 }
