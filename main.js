@@ -502,3 +502,26 @@ var adim = test.dimension(function(d){ return d})
 var agroup = adim.group(function(d) {return Math.floor(d*20)/20; })
 
 console.log(agroup.reduceCount().all());*/
+
+
+var myChart = barChart()
+  .x(d3.scale.linear()
+    .domain([0, d3.max(data2, function(d) { return d.key; })+1])
+    .rangeRound([0, width]))
+  .y(d3.scale.linear()
+    .range([height ,0 ]))
+  .dimension(PetalLength)
+  .group(gPetalLength);
+
+d3.select("#chartTest.chart").call(myChart);
+var data3 =  gSepalLength.reduceCount().all();
+var myChart = barChart()
+  .x(d3.scale.linear()
+    .domain([0, d3.max(data3, function(d) { return d.key; })+1])
+    .rangeRound([0, width]))
+  .y(d3.scale.linear()
+    .range([height ,0 ]))
+  .dimension(SepalLength)
+  .group(gSepalLength);
+
+d3.select("#chartTest2.chart").call(myChart);
