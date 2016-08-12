@@ -27,4 +27,4 @@ npm run watch
 - [X] Create histogram for numeric variables
 - [X] Create barplot for categorical variables
 - [ ] Create function to generate charts(`Barchart()` and `HistChart()`)
-- [ ] Change color brush inside rect or make ordinal scale 
+- [X] Change color brush inside rect or make ordinal scale 
