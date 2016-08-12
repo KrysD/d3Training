@@ -2,6 +2,7 @@
 
 var fs = require('fs'); //natif node system file read and write in file
 var d3 = global.d3 = require('d3');
+var dc = require('dc');
 var d3brush = require('d3-brush');
 var crossfilter = require('crossfilter');
 var parse = require('csv-parse'); //read line by line csv file
@@ -18,12 +19,15 @@ json.forEach(function(d, i) {
 var iris = crossfilter(json),
 	all = iris.groupAll(),
 	Species = iris.dimension(function(d) { return d.Species; }),
-    SpeciesFilter = iris.dimension(function(d) { return d.Species; }),
 	gSpecies = Species.group().reduceCount().all(), //Group to cardinality of each Species
     PetalLength = iris.dimension(function(d) {return d.PetalLength;}),
     PetalLengthFilter = iris.dimension(function(d) {return d.PetalLength;}),
-    gPetalLength = PetalLength.group(function(d) {return d ==1 ? Math.trunc(d*2)/2 : Math.trunc((d-0.1)*2)/2;}); //Create one group each centimeter
-
+    gPetalLength = PetalLength.group(function(d) {return d ==1 ? Math.floor(d*2)/2 : (Math.floor((d)*2-0.1))/2;}), //Create one group each centimeter
+    SepalLength = iris.dimension(function(d){ return d.SepalLength; }),
+    gSepalLength = SepalLength.group(function(d){ return Math.floor(d*2)/2;}),
+    SepalWidth = iris.dimension(function(d){return d.SepalWidth; }),
+    gSepalWidth = SepalWidth.group(function(d){ return Math.floor(d*2)/2; });
+/*    gPetalLength = PetalLength.group(function(d) {return Math.floor(d*2)/2}); //Create one group each centimeter*/
 /*Species.filter("setosa") //include only setosa
 var n = iris.groupAll().reduceCount().value(); //count number of element
 console.log("1: "+n) //50
@@ -67,10 +71,11 @@ var yAxis = d3.svg.axis()
     .orient("left")
     .ticks(5);
 
-var chart = d3.select(".chart")
+var chart = d3.select(".chart#chart")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .style("margin-left",15+"px");
+    .style("margin-left",15+"px")
+    .style("padding-top",20+"px");
 
 var bar = chart.selectAll("g")
     .data(data)
@@ -87,7 +92,9 @@ chart.selectAll(".bar")
     .attr("width", function(d) { return x(d.value); })
     .attr("height", y.rangeBand())
     .style("fill","steelblue")
+    .style("stroke", "#B0C4DE")
     .on("click", function(){
+        d3.select(".title#chart1 a").style("display", null);
         var currentColor = d3.select(this)[0][0].style["fill"] == "steelblue" ? 'grey' : 'steelblue'
         d3.select(this)[0][0].style["fill"] = currentColor;
         var actVal = d3.select(this)[0][0].textContent;
@@ -125,6 +132,12 @@ chart.append("g")
     .call(xAxis);
 
 
+d3.select(".title#chart1").append("a")
+              .attr("href", "javascript:reset(chart)")
+              .attr("class", "reset")
+              .text("reset")
+              .style("display", "none");
+
 chart.append("g")
     .attr("class", "y axis")
     .call(yAxis)
@@ -136,7 +149,7 @@ chart.append("text") //Add chart title
     .style("text-anchor", "middle")
     .text("Species"); 
 
-
+//End First Chart
 
 // Second Chart
 
@@ -163,10 +176,14 @@ var chart2 = d3.select(".chart#chart2")
     .attr("height", height + margin.top + margin.bottom)
     .style("margin-left",15+"px");
 
-var bar = chart2.selectAll("g")
-    .data(data2)
-  .enter().append("g")
-    .attr("transform", function(d, i) { return "translate(" + x2(d.key) + ",0)"; });
+chart2.append("defs")
+  .append("clipPath")
+  .attr("id", "clip")
+  .append("rect")
+  .attr("x", 0)
+  .attr("y", 0)
+  .attr("width", width)
+  .attr("height", height);
 
 var brush = d3.svg.brush()
     .x(x2)
@@ -174,20 +191,27 @@ var brush = d3.svg.brush()
     .on("brushend", brushend);
 
 function brushed() {
-  var e = brush.extent(); //range of the brush e[0] min e[1] max
-  chart2.selectAll(".bar").classed("hidden", function(d,id) {
-        /*d.key >= e[0] && d.key <= e[1]*/
-        /*console.log( "key : "+d.key+" start: "+e[0]+" end: "+e[1]);*/
-        return(d.key >= e[0] && d.key <= e[1] ? false : true)
-    });
+  d3.select(".title#chart2 a").style("display", null);
+    var e = brush.extent(); //range of the brush e[0] min e[1] max    
+    chart2.select("#clip>rect")
+        .attr("x", x2(e[0]))
+        .attr("width", x2(e[1]) - x2(e[0]));
   var range = [e[0],e[1]];
   updateRange(range);
 }
 
+
+
 function brushend() {
-    if (brush.empty()) chart2.selectAll(".hidden").classed("hidden", false);
-    if (brush.empty()) PetalLength.filterAll()
-  }
+    if (brush.empty()){
+        chart2.select("#clip>rect")
+        .attr("x", 0)
+        .attr("width", width);
+
+        PetalLength.filterAll()
+    }
+    /*if (brush.empty()) chart2.selectAll(".hidden").classed("hidden", false);*/
+}
 
 function resizePath(d) {
     var e = +(d == "e"),
@@ -204,18 +228,46 @@ function resizePath(d) {
     + "V" + (2 * y - 8);
 }
 
+chart2.selectAll(".hidden")
+  .data(data2)
+  .enter().append("rect")
+  .attr("class", "hidden")
+  .attr("x", function(d) {
+    return x2(d.key);
+  })
+  .attr("y", function(d) {
+    return y2(d.value);
+  })
+  .attr("height", function(d) {
+    return height - y2(d.value);
+  })
+  .attr("width", x2(0.5))
+  .style("stroke", "#C2BFBD")
+  .append("title")
+  .text(function(d) {
+    return d.key;
+  });
+
 chart2.selectAll(".bar")
     .data(data2)
-  .enter().append("rect")
+    .enter().append("rect")
+    .attr("clip-path", "url(#clip)")
     .attr("class", "bar")
-    .attr("x", function(d) { return x2(d.key); })
-    .attr("y", function(d) { return y2(d.value); })
-    .attr("height", function(d) { return height - y2(d.value); })
+    .attr("x", function(d) {
+    return x2(d.key);
+    })
+    .attr("y", function(d) {
+    return y2(d.value);
+    })
+    .attr("height", function(d) {
+    return height - y2(d.value);
+    })
     .attr("width", x2(0.5))
-    .style("stroke","white")
+    .style("stroke", "#B0C4DE")
     .append("title")
-    .text(function(d) { return d.key;});
-  
+    .text(function(d) {
+    return d.key;
+    });
 
 chart2.append("g")
     .attr("class", "x axis")
@@ -225,7 +277,7 @@ chart2.append("g")
   chart2.append("text") //Add chart title
     .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom) + ")")
     .style("text-anchor", "middle")
-    .text("Petal Length");  
+    .text("Petal Length (cm)");  
     
 
 chart2.append("g")
@@ -233,6 +285,11 @@ chart2.append("g")
     .call(yAxis2)
 
 
+d3.select(".title#chart2").append("a")
+              .attr("href", "javascript:reset2(chart)")
+              .attr("class", "reset")
+              .text("reset")
+              .style("display", "none");
 
 chart2.append("g")
   .attr("class", "x brush")
@@ -243,10 +300,30 @@ chart2.append("g")
 
 chart2.selectAll(".resize").append("path").attr("d", resizePath);
 
+//End Second chart
 
 
+window.reset = function(){
+   filterSpecies=[];
+   Species.filterAll()
+   updateData(gPetalLength.reduceCount().all())
 
-window.updateData = function(dat) {
+  chart.selectAll("rect.bar")
+    .style('fill',"steelblue")
+
+  d3.select(".title#chart1 a").style("display", "none");
+}
+
+window.reset2 = function(){
+    chart2.select("#clip>rect")
+        .attr("x", 0)
+        .attr("width", width);
+    d3.select("g.brush").call(brush.extent([0, 0]))
+    updateRange()
+    d3.select(".title#chart2 a").style("display", "none");
+}
+//Function to filter depending on UI
+window.updateData = function(dat,text=false) {
 
 // Scale the range of the data again 
 x2.domain([0, d3.max(dat, function(d) { return d.key; })+1]);
@@ -256,7 +333,22 @@ y2.domain([0, d3.max(dat, function(d) { return d.value })])
 
 var chart2 = d3.select(".chart#chart2")
 //Update all rects
-chart2.selectAll("rect")
+
+chart2.selectAll("rect.hidden")
+   .data(dat)
+   .transition()
+   .delay(function(d, i) {
+        return i * 50;
+    })
+   .duration(500)
+   .attr("y", function(d) {
+        return y2(d.value);
+   })
+   .attr("height", function(d) {
+        return height - y2(d.value);
+});
+
+chart2.selectAll("rect.bar")
    .data(dat)
    .transition()
    .delay(function(d, i) {
@@ -280,18 +372,40 @@ chart2.select(".y.axis")
     .transition()
     .duration(500)
     .call(yAxis2);
+
+if(text == true){
+  chart.selectAll("rect.bar")
+    .style('fill',function(d){
+      var col = filterSpecies.includes(d.key) ? "grey" : "steelblue";
+      return col
+    })
+}
 };
 
+
+
 window.filter = function(filt){
+  d3.select(".title#chart1 a").style("display", null);
+  filterSpecies = [];
+    filt.forEach(function(d){
+      filterSpecies.includes(d) == true ? filterSpecies.splice(filterSpecies.indexOf(d),1) : filterSpecies.push(d);
+    })
     Species.filter(function(d){
       return filt.indexOf(d) == -1;
     });
     var data = gPetalLength.reduceCount().all();
-    updateData(data);
+    updateData(data,true);
 };
 
-window.updateRange = function(filt){
-    if(brush.empty()){ 
+window.filter2 = function(filt){
+  d3.select(".title#chart2 a").style("display", null);
+    var data = filt;
+    console.log(data);
+    updateRange(data,true);
+};
+
+window.updateRange = function(filt,text=false){
+    if(brush.empty()&&text==false){ 
         PetalLength.filterAll()
     }else{
     PetalLength.filter(filt)
@@ -336,5 +450,55 @@ chart.selectAll("text#catTitle.catTitle")
         return x(d.value) - margin.right;
     })
 
+if(text == true){
+  brush.extent(brush.extent());
+  chart2.selectAll(".extent")
+                .attr("x", x2(filt[0]))
+                .attr("width", x2(filt[1]) - x2(filt[0]));
+
+  chart2.select("#clip>rect")
+        .attr("x", x2(filt[0]))
+        .attr("width", x2(filt[1]) - x2(filt[0]));
+
+  chart2.select(".resize.e")
+         .attr("transform","translate("+x2(filt[1])+",0)")
+         .style("display",null)
+  chart2.select(".resize.w")
+         .attr("transform","translate("+x2(filt[0])+",0)")
+         .style("display",null)
+}
+
 };
 
+
+
+//create histplot with crossfilter specifying size of bins
+/*var result = [];
+Math.random() * 1 -0.15
+for (var i = 1; i != 2001; ++i) result.push(i)
+
+var xtest = (d3.scale.linear()
+        .domain([0, 2000])
+        .rangeRound([0, 10 * 40]));
+console.log(xtest(550))
+
+var test = crossfilter(result)
+
+var testdim = test.dimension(function(d) { return d })
+
+var testgroup = testdim.group(function(d) { return Math.floor(d / 50) * 50; })
+
+console.log(testgroup.reduceCount().all())*/
+
+/*for (var a=[],i=0;i<15000;++i) a[i]=Math.random()*1 -0.15;
+
+var xtest = d3.scale.linear()
+        .domain([d3.min(a,function(d){return d; }), d3.max(a, function(d) { return d; })])
+        .rangeRound([0,20*40]);
+
+var test = crossfilter(a)
+
+var adim = test.dimension(function(d){ return d})
+var agroup = adim.group(function(d) {return Math.floor(d*20)/20; })
+
+console.log(agroup.reduceCount().all());*/
