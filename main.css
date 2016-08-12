@@ -1,7 +1,24 @@
+body {
+  font-family: "Helvetica Neue";
+  margin: 40px auto;
+  width: 960px;
+  min-height: 2000px;
+}
+
+#body {
+  position: relative;
+}
+
+#body > p {
+  line-height: 1.5em;
+  width: 640px;
+  text-rendering: optimizeLegibility;
+}
 .charts {
   padding: 10px 0;
 }
 .chart {
+  display: inline-block;
   padding-left: 20px;
   padding-top: 10px;
 }
@@ -26,6 +43,8 @@
   shape-rendering: crispEdges;
 }
 
+
+
 /*dont display yAxis for categorical variable*/
 #chart .y.axis g {
   display: none;
@@ -49,6 +68,17 @@ text#catTitle.catTitle {
 }
 
 /*Color for the hidden object*/
-.bar.hidden {
+#chart2 .hidden {
   fill: grey;
 }
+
+#chart2 .bar {
+  fill: steelblue;
+}
+
+.reset {
+  padding-left: 1em;
+  font-size: smaller;
+  color: #ccc;
+}
+
