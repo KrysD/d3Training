@@ -82,3 +82,6 @@ text#catTitle.catTitle {
   color: #ccc;
 }
 
+.chart .hidden {
+  fill: grey;
+}
